@@ -16,7 +16,13 @@
             {{ form_end(upload) }}
         </fieldset>
     </div>
-
+    {% if folder %}
+        <div class="flex flex-row">
+            <div class="basis-1/5 rounded-lg bg-gray-50 p-4 m-2">
+                <a href="/files">Back to file list</a>
+            </div>
+        </div>
+    {% endif %}
     {% for file in files %}
         <div class="flex flex-row">
             <div class="basis-1/5 rounded-lg bg-gray-50 p-4 m-2">

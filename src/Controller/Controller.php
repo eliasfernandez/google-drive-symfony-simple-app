@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller;
 
 use App\Document\File;
@@ -16,11 +17,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class Controller extends AbstractController
 {
-
     public function __construct(
         private Security $security,
         private GoogleDrive $googleDrive
-    ){
+    ) {
     }
 
     #[Route('/', name: 'index')]
@@ -39,10 +39,10 @@ class Controller extends AbstractController
 
     #[Route('/files/{folderId}/upload', name: 'upload_file_by_folder', methods: ['POST'])]
     #[Route('/files/upload', name: 'upload_file', methods: ['POST'])]
-    public function upload(Request $request,  ?string $folderId = null): Response
+    public function upload(Request $request, ?string $folderId = null): Response
     {
         $tokenData = $this->checkGoogleLogin();
-        if (!$tokenData) {
+        if (!is_array($tokenData)) {
             return $this->redirectToRoute('login');
         }
         $this->googleDrive->setAccessToken($tokenData);
@@ -54,7 +54,7 @@ class Controller extends AbstractController
             /** @var UploadedFile $file */
             $file = $form->get('file')->getData();
 
-            if ($file) {
+            if ($file->isValid()) {
                 $fileName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $this->googleDrive->uploadFile(
                     $file->getRealPath(),
@@ -74,14 +74,14 @@ class Controller extends AbstractController
     public function mkdir(Request $request, string $folderId = null): Response
     {
         $tokenData = $this->checkGoogleLogin();
-        if (!$tokenData) {
+        if (!is_array($tokenData)) {
             return $this->redirectToRoute('login');
         }
         $form = $this->createForm(CreateFolderType::class);
         $form->handleRequest($request);
 
         $name = $form->isSubmitted() && $form->isValid() ? $form->get('name')->getData() : null;
-        if (!$name) {
+        if (!is_string($name) || '' === $name) {
             $this->addFlash('warning', 'Name cannot be empty.');
             return $this->redirect('/files');
         }
@@ -101,7 +101,7 @@ class Controller extends AbstractController
     public function files(?string $folderId = null): Response
     {
         $tokenData = $this->checkGoogleLogin();
-        if (!$tokenData) {
+        if (!is_array($tokenData)) {
             return $this->redirectToRoute('login');
         }
         $this->googleDrive->setAccessToken($tokenData);
@@ -127,12 +127,13 @@ class Controller extends AbstractController
         return $this->render('files.html.twig', [
             'create' => $createFolder,
             'upload' => $uploadFile,
+            'folder' => $folderId,
             'files' => array_map(fn (array $file) => new File(
-                    $file['id'],
-                    $file['name'],
-                    $file['mimeType'],
-                    new \DateTimeImmutable($file['modifiedTime']
-                )), $this->googleDrive->listFiles($folderId))
+                $file['id'],
+                $file['name'],
+                $file['mimeType'],
+                new \DateTimeImmutable($file['modifiedTime'])
+            ), $this->googleDrive->listFiles($folderId))
         ]);
     }
 
@@ -141,7 +142,7 @@ class Controller extends AbstractController
     public function delete(string $fileId): Response
     {
         $tokenData = $this->checkGoogleLogin();
-        if (!$tokenData) {
+        if (!is_array($tokenData)) {
             return $this->redirectToRoute('login');
         }
         $this->googleDrive->setAccessToken($tokenData);
@@ -153,22 +154,22 @@ class Controller extends AbstractController
     }
 
     #[Route('/auth/google', name:'auth_google')]
-    public function google()
+    public function google(): void
     {
         throw new \LogicException('All google authentication should be handled in GoogleAuthenticator.');
     }
 
-    private function checkGoogleLogin(): array|bool
+    private function checkGoogleLogin(): mixed
     {
-        /** @var User $user */
+        $tokenData = null;
         if (($user = $this->security->getUser()) instanceof User) {
-            $tokenData = json_decode($user->getLastToken(), true);
+            $tokenData = json_decode($user->getLastToken() ?? '', true);
         }
-        if (!$tokenData) {
+        if (!is_array($tokenData)) {
             $this->addFlash('warning', 'Refresh your login');
             return false;
         }
-        if (new \DateTimeImmutable(sprintf('@%s', $tokenData['expires'])) < new \DateTime('now')) {
+        if (is_int($tokenData['expires']) && new \DateTimeImmutable(sprintf('@%s', $tokenData['expires'])) < new \DateTime('now')) {
             $this->addFlash('warning', 'Your token is expired, please login again.');
             return false;
         }
