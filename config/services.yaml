@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    env(MONGODB_URL): ''
+    env(MONGODB_DB): ''
 
 services:
     # default configuration for services in *this* file
@@ -22,3 +24,15 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    League\OAuth2\Client\Provider\Google:
+        $options:
+            clientId: '%env(OAUTH_GOOGLE_WEB_ID)%'
+            clientSecret: '%env(OAUTH_GOOGLE_WEB_SECRET)%'
+            redirectUri: 'http://127.0.0.1:8000/auth/google'
+            scopes: [
+                'email',
+                'openid',
+                'https://www.googleapis.com/auth/drive.file'
+            ]
+    GuzzleHttp\Client:
+        class: 'GuzzleHttp\Client'

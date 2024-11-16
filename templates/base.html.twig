@@ -12,6 +12,27 @@
         {% endblock %}
     </head>
     <body>
-        {% block body %}{% endblock %}
+        <div class="container mx-auto">
+            <nav class="flex space-x-4">
+                <a href="{{ path('login') }}" class="font-medium px-3 py-2 text-slate-700 rounded-lg hover:bg-slate-100 hover:text-slate-900">
+                    Sign in with Google ({{ app.user.email ?? 'Anonymous user' }})
+                </a>
+                <a href="{{ path('files') }}" class="font-medium px-3 py-2 text-slate-700 rounded-lg hover:bg-slate-100 hover:text-slate-900">
+                    Check your files
+                </a>
+            </nav>
+            {% block body %}{% endblock %}
+            {% for message in app.flashes('warning') %}
+                <div class="prose lg:prose-xl text-red-700">
+                    {{ message }}
+                </div>
+            {% endfor %}
+
+            {% for message in app.flashes('success') %}
+                <div class="prose lg:prose-xl text-green-700">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
     </body>
 </html>

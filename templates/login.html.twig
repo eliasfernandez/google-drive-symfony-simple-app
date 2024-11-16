@@ -1,0 +1,16 @@
+{#
+    Render the sign in link.
+    For official buttons, see https://developers.google.com/identity/branding-guidelines
+#}
+
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <a href="{{ google_oauth_link }}">
+        Sign in with Google
+    </a>
+{% endblock %}
+
+{% block title %}
+    Google Login
+{% endblock %}
