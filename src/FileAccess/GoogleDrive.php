@@ -7,18 +7,32 @@ use League\OAuth2\Client\Token\AccessToken;
 
 class GoogleDrive
 {
-    private $accessToken;
+    private AccessToken $accessToken;
 
     public function __construct(private Client $http, private readonly Client $client)
     {
 
     }
+
+    /**
+     * @param array{
+     *     scope:string,
+     *     token_type:string,
+     *     id_token:string,
+     *     access_token:string,
+     *     expires:int
+     * } $accessTokenData
+     * @return void
+     */
     public function setAccessToken(array $accessTokenData): void
     {
         $this->accessToken = new AccessToken($accessTokenData);
     }
 
 
+    /**
+     * @return array<int, mixed>
+     */
     public function listFiles(string $folderId = null): array
     {
         $url = 'https://www.googleapis.com/drive/v3/files';
@@ -37,7 +51,8 @@ class GoogleDrive
             ],
         ]);
 
-        $data = json_decode($response->getBody()->getContents(), true);
+        /** @var array{files?: array<int, mixed>} $data */
+        $data = (array) json_decode($response->getBody()->getContents(), true, JSON_THROW_ON_ERROR);
 
         return $data['files'] ?? [];
     }
@@ -56,6 +71,9 @@ class GoogleDrive
         return $response->getStatusCode() === 204;
     }
 
+    /**
+     * @return mixed[]
+     */
     public function uploadFile(string $filePath, string $fileName, string $folderId = null): array
     {
 
@@ -84,9 +102,12 @@ class GoogleDrive
             'body' => $body,
         ]);
 
-        return json_decode($response->getBody()->getContents(), true);
+        return (array) json_decode($response->getBody()->getContents(), true, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @return ?mixed[]
+     */
     public function dirExists(string $folderName, ?string $parentFolderId = null): ?array
     {
         $url = 'https://www.googleapis.com/drive/v3/files';
@@ -109,12 +130,16 @@ class GoogleDrive
             ],
         ]);
 
-        $data = json_decode($response->getBody()->getContents(), true);
+        /** @var array{files?: array<int, mixed>} $data */
+        $data = json_decode($response->getBody()->getContents(), true, JSON_THROW_ON_ERROR);
 
         // Return the first matching folder or null if none exist
-        return $data['files'][0] ?? null;
+        return isset($data['files']) && count($data['files']) > 0 ? (array) $data['files'][0] : null;
     }
 
+    /**
+     * @return mixed[]
+     */
     public function makeDir(string $dirname, ?string $parentFolderId = null): array
     {
 
@@ -139,7 +164,7 @@ class GoogleDrive
             'json' => $folderMetadata,
         ]);
 
-        return json_decode($response->getBody()->getContents(), true);
+        return (array) json_decode($response->getBody()->getContents(), true, JSON_THROW_ON_ERROR);
     }
 
 }

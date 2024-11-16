@@ -12,7 +12,7 @@ class User implements UserInterface
     private string $id;
 
     #[MongoDB\Field(type: "string")]
-    private ?string $email = null;
+    private string $email;
 
     #[MongoDB\Field(type: "string", nullable: true)]
     private ?string $name = null;
@@ -29,18 +29,18 @@ class User implements UserInterface
         return $this->id;
     }
 
-    public function setId(?string $id): User
+    public function setId(string $id): User
     {
         $this->id = $id;
         return $this;
     }
 
-    public function getEmail(): ?string
+    public function getEmail(): string
     {
         return $this->email;
     }
 
-    public function setEmail(?string $email): User
+    public function setEmail(string $email): User
     {
         $this->email = $email;
         return $this;

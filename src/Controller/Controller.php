@@ -128,12 +128,15 @@ class Controller extends AbstractController
             'create' => $createFolder,
             'upload' => $uploadFile,
             'folder' => $folderId,
-            'files' => array_map(fn (array $file) => new File(
-                $file['id'],
-                $file['name'],
-                $file['mimeType'],
-                new \DateTimeImmutable($file['modifiedTime'])
-            ), $this->googleDrive->listFiles($folderId))
+            'files' => array_map(function ($file) {
+                /** @var array{id: string, name: string, mimeType: String, modifiedTime: int} $file */
+                return new File(
+                    $file['id'],
+                    $file['name'],
+                    $file['mimeType'],
+                    new \DateTimeImmutable(sprintf('@%s', $file['modifiedTime']))
+                );
+            }, $this->googleDrive->listFiles($folderId))
         ]);
     }
 
@@ -159,17 +162,21 @@ class Controller extends AbstractController
         throw new \LogicException('All google authentication should be handled in GoogleAuthenticator.');
     }
 
-    private function checkGoogleLogin(): mixed
+    /**
+     * @return bool|array{scope:string, token_type:string, id_token:string, access_token:string, expires:int}
+     */
+    private function checkGoogleLogin(): bool|array
     {
         $tokenData = null;
-        if (($user = $this->security->getUser()) instanceof User) {
-            $tokenData = json_decode($user->getLastToken() ?? '', true);
+        if (($user = $this->security->getUser()) instanceof User && null !== $user->getLastToken()) {
+            /** @var ?array{scope:string, token_type:string, id_token:string, access_token:string, expires:int} $tokenData */
+            $tokenData = json_decode($user->getLastToken(), true, JSON_THROW_ON_ERROR);
         }
         if (!is_array($tokenData)) {
             $this->addFlash('warning', 'Refresh your login');
             return false;
         }
-        if (is_int($tokenData['expires']) && new \DateTimeImmutable(sprintf('@%s', $tokenData['expires'])) < new \DateTime('now')) {
+        if (new \DateTimeImmutable(sprintf('@%s', $tokenData['expires'])) < new \DateTime('now')) {
             $this->addFlash('warning', 'Your token is expired, please login again.');
             return false;
         }
